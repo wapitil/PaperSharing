@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>论文阅读经验分享</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">课题组论文阅读沉淀工具</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="nav-action" id="loadExampleButton" type="button">载入示例</button>
+          <a class="nav-action" href="./reader.html">查看阅读库</a>
+          <a class="nav-action" href="./admin.html">管理数据</a>
+        </div>
+      </header>
+
+      <section class="editor-view active" id="editorView" aria-label="编辑界面">
+        <form class="note-editor" id="shareForm">
+          <section class="paper-lookup">
+            <div class="lookup-row">
+              <label class="field lookup-field">
+                <span>DOI / arXiv / URL <strong>*</strong></span>
+                <input id="paperIdentifier" required />
+              </label>
+              <button class="primary-button" id="lookupButton" type="button">识别论文</button>
+            </div>
+
+            <p class="lookup-status" id="lookupStatus">等待输入论文标识。</p>
+
+            <article class="paper-result" id="paperResult">
+              <div>
+                <p class="result-label">识别结果</p>
+                <h2 id="resultTitle">尚未识别论文</h2>
+                <p id="resultMeta">输入 DOI / arXiv 后会自动补全标题、作者和年份。</p>
+              </div>
+              <button class="small-button" id="togglePaperFieldsButton" type="button">手动修正</button>
+            </article>
+
+            <div class="manual-paper-fields" id="manualPaperFields" hidden>
+              <label class="field">
+                <span>论文标题 <strong>*</strong></span>
+                <input id="paperTitle" required />
+              </label>
+
+              <div class="field-grid">
+                <label class="field">
+                  <span>作者</span>
+                  <input id="paperAuthors" />
+                </label>
+                <label class="field">
+                  <span>年份</span>
+                  <input id="paperYear" inputmode="numeric" />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>论文链接</span>
+                <input id="paperLink" />
+              </label>
+            </div>
+          </section>
+
+          <section class="meta-row">
+            <label class="field">
+              <span>分享者名称 <strong>*</strong></span>
+              <input id="contributorName" required />
+            </label>
+          </section>
+
+          <section class="document-editor">
+            <article class="doc-block">
+              <h2>我的整体判断</h2>
+              <div class="judgement-options" role="radiogroup" aria-label="我的整体判断">
+                <label>
+                  <input type="radio" name="overallJudgement" value="very_useful" checked />
+                  <span>很有用</span>
+                </label>
+                <label>
+                  <input type="radio" name="overallJudgement" value="partial" />
+                  <span>只用到一部分</span>
+                </label>
+                <label>
+                  <input type="radio" name="overallJudgement" value="not_helpful_yet" />
+                  <span>暂时没帮上忙</span>
+                </label>
+                <label>
+                  <input type="radio" name="overallJudgement" value="unclear" />
+                  <span>还没判断清楚</span>
+                </label>
+              </div>
+            </article>
+
+            <article class="doc-block">
+              <h2>为什么选择这一篇文章</h2>
+              <textarea id="choiceReason" rows="4"></textarea>
+            </article>
+
+            <article class="doc-block">
+              <h2>阅读时想记录的点</h2>
+              <div class="point-add-toolbar" aria-label="添加阅读点">
+                <button class="small-button" type="button" data-add-point="stuck">我卡住的地方</button>
+                <button class="small-button" type="button" data-add-point="important">我觉得重要的地方</button>
+                <button class="small-button" type="button" data-add-point="uncertain">我不确定的判断</button>
+                <button class="small-button" type="button" data-add-point="misunderstanding">容易误解的点</button>
+                <button class="small-button" type="button" data-add-point="research_related">和自己课题有关的点</button>
+                <button class="small-button" type="button" data-add-point="experiment">复现/实验注意事项</button>
+              </div>
+              <div class="reading-point-list" id="readingPointList"></div>
+            </article>
+
+            <article class="doc-block">
+              <h2>我的看法</h2>
+              <textarea id="personalUnderstanding" rows="5"></textarea>
+            </article>
+          </section>
+
+          <div class="form-actions">
+            <button class="primary-button" type="submit">保存</button>
+            <button class="secondary-button" id="resetButton" type="button">清空</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="reader-view" id="readerView" aria-label="阅读界面">
+        <div class="reader-actions">
+          <button class="secondary-button" id="backToEditorButton" type="button">返回编辑</button>
+        </div>
+        <article class="reader-page" id="readerPage"></article>
+      </section>
+    </main>
+
+    <template id="readingPointTemplate">
+      <article class="reading-point" data-reading-point>
+        <div class="reading-point-head">
+          <h3 data-title></h3>
+          <button class="icon-button" type="button" data-remove title="删除这一条">×</button>
+        </div>
+        <textarea data-field="content" rows="4"></textarea>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

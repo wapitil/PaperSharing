@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>论文阅读经验库</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell reader-app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">课题组论文阅读沉淀工具</p>
+          <h1>论文阅读经验库</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="nav-action" href="./index.html">添加阅读经验</a>
+          <a class="nav-action" href="./admin.html">管理数据</a>
+          <button class="nav-action" id="loadReaderExamplesButton" type="button">载入示例数据</button>
+        </div>
+      </header>
+
+      <section class="reader-library">
+        <aside class="paper-list-panel">
+          <div class="reader-section-heading">
+            <h2>论文</h2>
+          </div>
+          <label class="field reader-search-field">
+            <span>搜索论文</span>
+            <input id="paperSearchInput" placeholder="搜索标题、作者、年份" />
+          </label>
+          <div class="paper-list" id="paperList"></div>
+        </aside>
+
+        <section class="paper-detail-panel" id="paperDetail"></section>
+      </section>
+    </main>
+
+    <script src="./reader.js"></script>
+  </body>
+</html>

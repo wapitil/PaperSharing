@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>阅读经验管理</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell reader-app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">课题组论文阅读沉淀工具</p>
+          <h1>阅读经验管理</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="nav-action" href="./reader.html">查看阅读库</a>
+          <a class="nav-action" href="./index.html">添加阅读经验</a>
+        </div>
+      </header>
+
+      <section class="admin-toolbar">
+        <button class="secondary-button" id="exportDataButton" type="button">导出 JSON</button>
+        <label class="secondary-link file-import-button">
+          导入 JSON
+          <input id="importDataInput" type="file" accept="application/json,.json" hidden />
+        </label>
+        <button class="secondary-button danger-button" id="clearAllButton" type="button">清空全部</button>
+      </section>
+
+      <section class="admin-status" id="adminStatus">当前数据保存在浏览器本地。</section>
+
+      <section class="admin-record-list" id="adminRecordList"></section>
+    </main>
+
+    <script src="./admin.js"></script>
+  </body>
+</html>
