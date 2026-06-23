@@ -58,3 +58,6 @@ Backups.backupdb
 MobileBackups.trash
 tmbootpicker.efi
 scripts/config.json
+data/
+dist/
+node_modules/

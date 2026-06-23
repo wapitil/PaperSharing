@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>论文阅读经验库</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./assets/css/styles.css" />
   </head>
   <body>
     <main class="app-shell reader-app">
@@ -14,9 +14,9 @@
           <h1>论文阅读经验库</h1>
         </div>
         <div class="topbar-actions">
+          <div class="user-chip" id="currentUserBox"></div>
           <a class="nav-action" href="./index.html">添加阅读经验</a>
-          <a class="nav-action" href="./admin.html">管理数据</a>
-          <button class="nav-action" id="loadReaderExamplesButton" type="button">载入示例数据</button>
+          <a class="nav-action" href="./admin.html">我的管理</a>
         </div>
       </header>
 
@@ -36,6 +36,6 @@
       </section>
     </main>
 
-    <script src="./reader.js"></script>
+    <script type="module" src="./assets/js/reader.js"></script>
   </body>
 </html>

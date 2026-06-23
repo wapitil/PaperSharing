@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - 论文阅读经验库</title>
+    <link rel="stylesheet" href="./assets/css/styles.css" />
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-panel">
+        <div class="login-copy">
+          <p class="eyebrow">课题组论文阅读沉淀工具</p>
+          <h1>登录后发表和管理阅读经验</h1>
+          <p>阅读库公开可看。登录只用于发表内容和管理自己的记录。</p>
+          <a class="nav-action" href="./reader.html">先去阅读库</a>
+        </div>
+
+        <form class="login-form" id="loginForm">
+          <div class="login-mode" role="tablist" aria-label="登录模式">
+            <button class="active" type="button" data-auth-mode="login">登录</button>
+            <button type="button" data-auth-mode="register">注册</button>
+          </div>
+
+          <label class="field">
+            <span>邮箱 <strong>*</strong></span>
+            <input id="email" type="email" autocomplete="email" required />
+          </label>
+
+          <label class="field">
+            <span>密码 <strong>*</strong></span>
+            <input id="password" type="password" autocomplete="current-password" minlength="8" required />
+          </label>
+
+          <label class="field" id="displayNameField" hidden>
+            <span>显示名 <strong>*</strong></span>
+            <input id="displayName" autocomplete="name" />
+          </label>
+
+          <p class="login-status" id="loginStatus"></p>
+
+          <button class="primary-button" id="submitAuthButton" type="submit">登录</button>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./assets/js/login.js"></script>
+  </body>
+</html>

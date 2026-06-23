@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>阅读经验管理</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./assets/css/styles.css" />
   </head>
   <body>
     <main class="app-shell reader-app">
@@ -14,7 +14,8 @@
           <h1>阅读经验管理</h1>
         </div>
         <div class="topbar-actions">
-          <a class="nav-action" href="./reader.html">查看阅读库</a>
+          <div class="user-chip" id="currentUserBox"></div>
+          <a class="nav-action" href="./reader.html">阅读经验库</a>
           <a class="nav-action" href="./index.html">添加阅读经验</a>
         </div>
       </header>
@@ -28,11 +29,11 @@
         <button class="secondary-button danger-button" id="clearAllButton" type="button">清空全部</button>
       </section>
 
-      <section class="admin-status" id="adminStatus">当前数据保存在浏览器本地。</section>
+      <section class="admin-status" id="adminStatus">管理端只显示当前身份发表的阅读经验。</section>
 
       <section class="admin-record-list" id="adminRecordList"></section>
     </main>
 
-    <script src="./admin.js"></script>
+    <script type="module" src="./assets/js/admin.js"></script>
   </body>
 </html>

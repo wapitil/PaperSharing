@@ -1,4 +1,6 @@
-const STORAGE_KEY = "paper-sharing-notes";
+import { PaperSharingSession } from "./session.js";
+import { PaperSharingStorage } from "./storage.js";
+import { createRichEditor, docFromText, isDocEmpty, plainTextFromDoc, renderRichTextDoc } from "./rich-editor.js";
 
 const judgementText = {
   very_useful: "很有用",
@@ -23,40 +25,24 @@ const lookupStatus = document.querySelector("#lookupStatus");
 const manualPaperFields = document.querySelector("#manualPaperFields");
 const togglePaperFieldsButton = document.querySelector("#togglePaperFieldsButton");
 const readingPointList = document.querySelector("#readingPointList");
-const uploadTimePreview = document.querySelector("#uploadTimePreview");
+const currentUserBox = document.querySelector("#currentUserBox");
+const draftStorageKey = "paper-sharing-editor-draft";
 let readingPointOrder = 0;
+let choiceReasonEditor;
+let personalUnderstandingEditor;
 
-const exampleNote = {
-  paperIdentifier: "https://arxiv.org/abs/1706.03762",
-  paperTitle: "Attention Is All You Need",
-  paperAuthors: "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit et al.",
-  paperYear: "2017",
-  paperLink: "https://arxiv.org/abs/1706.03762",
-  contributorName: "张三",
-  overallJudgement: "very_useful",
-  uploadedAt: "",
-  choiceReason:
-    "我读这篇是因为自己在看序列建模和注意力机制，很多后续大模型论文都会默认读者理解 Transformer。",
-  readingPoints: [
-    {
-      type: "important",
-      content: "Figure 1 比正文更容易先建立结构直觉。建议先看图，再回头读 Section 3。",
-    },
-    {
-      type: "misunderstanding",
-      content: "不要把 Transformer 简化理解成只有 attention，残差、归一化、位置编码也很关键。",
-    },
-    {
-      type: "uncertain",
-      content: "我不确定原始机器翻译实验设置和现在的大模型训练设置还能否直接类比。",
-    },
-  ],
-  personalUnderstanding:
-    "我理解这篇文章的关键不是单独提出 attention，而是把序列建模从循环结构里解放出来，让训练并行化和长距离依赖建模同时变得更直接。",
-};
+initSharePage();
 
-renderPaperResult();
-renderReader();
+async function initSharePage() {
+  await PaperSharingSession.render(currentUserBox);
+  initBaseEditors();
+  restoreDraft();
+  syncContributorName();
+  renderPaperResult();
+  renderReader();
+}
+
+window.addEventListener("paper-sharing-user-change", syncContributorName);
 
 document.querySelectorAll("[data-add-point]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -65,30 +51,16 @@ document.querySelectorAll("[data-add-point]").forEach((button) => {
   });
 });
 
-document.querySelector("#loadExampleButton").addEventListener("click", () => {
-  fillForm(exampleNote);
-  setLookupStatus("已载入示例。", "success");
-  renderPaperResult();
-  renderReader();
-});
-
 document.querySelector("#resetButton").addEventListener("click", () => {
   form.reset();
   readingPointList.replaceChildren();
+  choiceReasonEditor.commands.clearContent();
+  personalUnderstandingEditor.commands.clearContent();
   setRadioValue("overallJudgement", "very_useful");
-  setUploadTime("");
   setLookupStatus("等待输入论文标识。");
   renderPaperResult();
   renderReader();
 });
-
-const showReaderButton = document.querySelector("#showReaderButton");
-if (showReaderButton) {
-  showReaderButton.addEventListener("click", () => {
-    renderReader();
-    showView("reader");
-  });
-}
 
 document.querySelector("#backToEditorButton").addEventListener("click", () => {
   showView("editor");
@@ -112,23 +84,31 @@ form.addEventListener("change", () => {
   renderReader();
 });
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  const userName = await PaperSharingSession.requireUserName();
+  if (!userName) {
+    saveDraft();
+    setLookupStatus("正在前往登录页。", "error");
+    return;
+  }
+  setValue("contributorName", userName);
 
   if (!validateBeforeSave()) {
     return;
   }
 
-  // 当前版本没有后端，保存后的记录先放在浏览器本地，验证编辑/阅读闭环。
+  // 保存时由后端绑定 ownerName；本地回退也使用同一份 Note 结构。
   const note = collectFormData();
   note.id = crypto.randomUUID();
+  note.ownerName = userName;
+  note.contributorName = userName;
   note.uploadedAt = new Date().toISOString();
 
-  const savedNotes = readSavedNotes();
-  savedNotes.unshift(note);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(savedNotes.slice(0, 12)));
+  await createSavedNote(note);
+  sessionStorage.removeItem(draftStorageKey);
 
-  setUploadTime(note.uploadedAt);
   renderReader(note);
   showView("reader");
 });
@@ -301,7 +281,11 @@ function addReadingPoint(values = {}) {
   const node = template.content.firstElementChild.cloneNode(true);
   node.dataset.type = values.type || "stuck";
   node.dataset.order = values.order || String(++readingPointOrder);
-  node.querySelector('[data-field="content"]').value = values.content || "";
+  node.richEditor = createRichEditor({
+    element: node.querySelector('[data-field="content"]'),
+    content: values.contentDoc || docFromText(values.content || ""),
+    onUpdate: renderReader,
+  });
   readingPointOrder = Math.max(readingPointOrder, Number(node.dataset.order) || 0);
 
   // 阅读点只有类型和正文。类型由添加按钮决定，标题编号根据同类条目自动更新。
@@ -313,6 +297,19 @@ function addReadingPoint(values = {}) {
 
   readingPointList.prepend(node);
   updateReadingPointTitles();
+}
+
+function initBaseEditors() {
+  choiceReasonEditor = createRichEditor({
+    element: document.querySelector("#choiceReason"),
+    content: docFromText(""),
+    onUpdate: renderReader,
+  });
+  personalUnderstandingEditor = createRichEditor({
+    element: document.querySelector("#personalUnderstanding"),
+    content: docFromText(""),
+    onUpdate: renderReader,
+  });
 }
 
 function updateReadingPointTitles() {
@@ -333,12 +330,21 @@ function collectFormData() {
     paperYear: valueOf("paperYear"),
     paperLink: valueOf("paperLink"),
     contributorName: valueOf("contributorName"),
-    uploadedAt: getUploadTime(),
+    uploadedAt: "",
     overallJudgement: getRadioValue("overallJudgement"),
-    choiceReason: valueOf("choiceReason"),
+    choiceReason: plainTextFromDoc(choiceReasonEditor.getJSON()),
+    choiceReasonDoc: choiceReasonEditor.getJSON(),
     readingPoints: collectReadingPoints(),
-    personalUnderstanding: valueOf("personalUnderstanding"),
+    personalUnderstanding: plainTextFromDoc(personalUnderstandingEditor.getJSON()),
+    personalUnderstandingDoc: personalUnderstandingEditor.getJSON(),
   };
+}
+
+function syncContributorName() {
+  const userName = PaperSharingSession.getUserName();
+  if (userName) {
+    setValue("contributorName", userName);
+  }
 }
 
 function collectReadingPoints() {
@@ -346,9 +352,10 @@ function collectReadingPoints() {
     .map((item) => ({
       type: item.dataset.type,
       order: Number(item.dataset.order) || 0,
-      content: item.querySelector('[data-field="content"]').value.trim(),
+      content: plainTextFromDoc(item.richEditor.getJSON()),
+      contentDoc: item.richEditor.getJSON(),
     }))
-    .filter((item) => item.content);
+    .filter((item) => item.content || !isDocEmpty(item.contentDoc));
 }
 
 function fillForm(note) {
@@ -359,13 +366,34 @@ function fillForm(note) {
   setValue("paperLink", note.paperLink);
   setValue("contributorName", note.contributorName);
   setRadioValue("overallJudgement", note.overallJudgement);
-  setValue("choiceReason", note.choiceReason);
-  setValue("personalUnderstanding", note.personalUnderstanding);
-  setUploadTime(note.uploadedAt);
+  choiceReasonEditor.commands.setContent(note.choiceReasonDoc || docFromText(note.choiceReason || ""));
+  personalUnderstandingEditor.commands.setContent(note.personalUnderstandingDoc || docFromText(note.personalUnderstanding || ""));
 
   readingPointList.replaceChildren();
   readingPointOrder = 0;
-  note.readingPoints.forEach((item) => addReadingPoint(item));
+  (note.readingPoints || []).forEach((item) => addReadingPoint(item));
+}
+
+function saveDraft() {
+  try {
+    sessionStorage.setItem(draftStorageKey, JSON.stringify(collectFormData()));
+  } catch {
+    // Draft recovery is best effort.
+  }
+}
+
+function restoreDraft() {
+  try {
+    const draft = JSON.parse(sessionStorage.getItem(draftStorageKey) || "null");
+    if (!draft) {
+      return;
+    }
+
+    fillForm(draft);
+    setLookupStatus("已恢复登录前的草稿。", "success");
+  } catch {
+    sessionStorage.removeItem(draftStorageKey);
+  }
 }
 
 function validateBeforeSave() {
@@ -395,7 +423,7 @@ function validateBeforeSave() {
 }
 
 function hasExperienceContent() {
-  return Boolean(valueOf("choiceReason") || valueOf("personalUnderstanding") || collectReadingPoints().length);
+  return Boolean(!isDocEmpty(choiceReasonEditor.getJSON()) || !isDocEmpty(personalUnderstandingEditor.getJSON()) || collectReadingPoints().length);
 }
 
 function renderPaperResult() {
@@ -425,21 +453,22 @@ function renderReader(note = collectFormData()) {
       </div>
     </section>
 
-    ${renderTextBlock("为什么选择这一篇文章", note.choiceReason)}
+    ${renderTextBlock("为什么选择这一篇文章", note.choiceReasonDoc, note.choiceReason)}
     ${renderReadingPoints(note.readingPoints)}
-    ${renderTextBlock("我怎么理解这篇文章", note.personalUnderstanding)}
+    ${renderTextBlock("我怎么理解这篇文章", note.personalUnderstandingDoc, note.personalUnderstanding)}
   `;
 }
 
-function renderTextBlock(title, text) {
-  if (!text) {
+function renderTextBlock(title, doc, fallbackText = "") {
+  const html = renderRichTextDoc(doc, fallbackText);
+  if (!html) {
     return "";
   }
 
   return `
     <section class="reader-block">
       <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(text)}</p>
+      <div class="rich-content">${html}</div>
     </section>
   `;
 }
@@ -462,7 +491,7 @@ function renderReadingPoints(points) {
               <section class="reader-point-group">
                 <h4>${escapeHtml(readingPointTypeText[type])}</h4>
                 <ol>
-                  ${grouped[type].map((point) => `<li>${escapeHtml(point.content)}</li>`).join("")}
+                  ${grouped[type].map((point) => `<li><div class="rich-content">${renderRichTextDoc(point.contentDoc, point.content)}</div></li>`).join("")}
                 </ol>
               </section>
             `,
@@ -494,30 +523,17 @@ function getReadingPointNodesInReadingOrder() {
   );
 }
 
-function getUploadTime() {
-  return uploadTimePreview?.dataset.value || "";
-}
-
-function setUploadTime(value) {
-  if (!uploadTimePreview) {
-    return;
-  }
-
-  uploadTimePreview.dataset.value = value || "";
-  uploadTimePreview.textContent = value ? formatDateTime(value) : "保存时生成";
-}
-
 function setLookupStatus(message, type = "") {
   lookupStatus.textContent = message;
   lookupStatus.className = `lookup-status ${type}`.trim();
 }
 
 function readSavedNotes() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    return [];
-  }
+  return PaperSharingStorage.readNotes();
+}
+
+function createSavedNote(note) {
+  return PaperSharingStorage.createNote(note);
 }
 
 function valueOf(id) {

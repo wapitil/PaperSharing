@@ -40,6 +40,7 @@ def progress(message: str):
         thread.join()
         print(f"\r{message} 完成" + " " * 12)
 
+
 # ---------------- Git Helpers ---------------- #
 
 
